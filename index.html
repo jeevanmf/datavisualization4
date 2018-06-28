@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+<head>
+  <title>Charts using D3</title>
+ <style>
+    body {background-color: AliceBlue;}
+    h1 {color: #0d0033;}    
+    p {color: blue;}
+ </style>
+
+</head>
+<body>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <style>
+        .line {
+        fill: none;
+        stroke: steelblue;
+        stroke-width: 2px;}
+</style>
+<center><h1>Bar chart using D3</h1></center>
+<svg id="bar" width="1000" height="890"></svg>
+    
+<script type="text/javascript">
+    function barChart() {
+    setTimeout(
+    function() {
+	// chart margin
+	let svg = d3.select("svg"),
+    margin = {top: 50, right: 50, bottom: 40, left: 130},
+    width = svg.attr("width") - margin.left - margin.right,
+    height = svg.attr("height") - margin.top - margin.bottom,
+    g = svg.append("g").attr("transform", "translate(" + margin.left + "," +margin.top + ")");
+
+
+	//chart scales
+	let	x = d3.scaleLinear().rangeRound([0, width]),
+		y = d3.scaleBand().rangeRound([height, 0]).padding(0.2);
+
+	//loading the data
+	d3.csv("barchart.csv", function(d)
+    {
+		d.received_amount_in_year_2010 = +d.received_amount_in_year_2010;
+		return d;
+	}, function (error, data) {
+		if(error) throw error;
+
+	//sorting the data
+	data.sort(function(a,b) { return a.received_amount_in_year_2010 - b.received_amount_in_year_2010; });
+
+	// domains based on data
+	x.domain([0, d3.max(data, function(d) { return d.received_amount_in_year_2010; })]);
+	y.domain(data.map(function(d) { return d.recipient_countries; }));
+
+	//append x axis to svg
+	g.append("g")
+		.attr("class", "x-axis")
+		.attr("transform", "translate(0," + height + ")")
+		.call(d3.axisBottom(x))
+		.append("text")
+        .attr("fill", "red")
+		.attr("y", 30)
+		.attr("x", 450)
+		.attr("dy", "0.5em")
+		//.style("fill", "black")
+        .style("font", "12px monospace")
+		.text("Recieved Amount (USD)");
+
+	//append y axis to svg
+	g.append("g")
+		.attr("class", "y-axis")
+		.call(d3.axisLeft(y));
+
+	//append rects to svg based on data
+	g.selectAll(".bar")
+		.data(data)
+		.enter()
+		.append("rect")
+		.attr("class", "bar")
+		.attr("x", 0)
+		.attr("y", function(d) { return y(d.recipient_countries); })
+		.attr("height", y.bandwidth())
+		.attr("width", function(d) { return x(d.received_amount_in_year_2010); })
+		.style("fill", "#4682b4");
+	});
+
+	//define chart title to svg
+	let title = svg.append("g")
+		.attr("class", "title");
+	title.append("text")
+		.attr("x", (width/1.5))
+			.attr("y", 45)
+			.attr("text-anchor", "middle")
+			.style("font", "12px monospace")
+			.text("Donation by the United States, 2010");
+
+	//append source data to svg
+	let source = svg.append("g")
+		.attr("class", "countries");
+	source.append("text")
+        .attr("fill", "red")
+		.attr("x", 400)
+		//.attr("y", 500)
+        .attr("transform", "rotate(90)")
+		//.attr("text-anchor", "middle")
+		.style("font", "12px monospace")
+		.text("Reciepient countries");
+        },500);
+
+}
+barChart();
+	</script>
+    
+<!-- Line Chart -->
+    
+<center><h1>Line chart using D3</h1></center>
+<svg id="line" width="1000" height="500"></svg>
+    
+<script type="text/javascript">
+
+// dimensions and margins of the graph
+var margin = {top: 50, right: 50, bottom: 50, left: 70},
+    width = 560 - margin.left - margin.right,
+    height = 460 - margin.top - margin.bottom;
+
+// parse the year
+var parseTime = d3.timeParse("%Y");
+
+// ranges
+var x = d3.scaleTime().range([0, width]);
+var y = d3.scaleLinear().range([height, 0]);
+
+// define the line
+var valueline = d3.line()
+    .x(function(d) { return x(d.year); })
+    .y(function(d) { return y(d.total_amount); });
+
+// moves the 'group' element to the top left margin
+var svg = d3.select("#line").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+// load data
+d3.csv("linechart.csv", function(error, data) {
+  if (error) throw error;
+
+  // formatting the data
+  data.forEach(function(d) {
+      d.year = parseTime(d.year);
+      d.total_amount = +d.total_amount;
+  });
+
+  // Scale the range
+  x.domain(d3.extent(data, function(d) { return d.year; }));
+  y.domain([0, d3.max(data, function(d) { return d.total_amount; })]);
+
+  // Adding the valueline path
+  svg.append("path")
+      .data([data])
+      .attr("class", "line")
+      .attr("d", valueline);
+
+  // Add the X Axis
+  svg.append("g")
+      .attr("transform", "translate(0," + height + ")")
+      .call(d3.axisBottom(x))
+    .append("text")
+        .attr("fill", "red")
+        .attr("transform", "rotate(0)")
+        //.attr("x", 300)
+        //.attr("dy", "4em")
+        .attr("y", -6)
+        .attr("x", 430)
+        .attr("dx", "0.71em")
+        .style("text-anchor", "end")
+        .style("font", "12px monospace")
+        .text("Year");
+    
+  // Add the Y Axis
+  svg.append("g")
+    .attr("class", "axis axis--y")
+      .call(d3.axisLeft(y))
+    // text label for Y axis      
+        .append("text")
+        .attr("fill", "red")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 6)
+        .attr("dy", "0.71em")
+        .style("font", "12px monospace")
+        .style("text-anchor", "end")
+        .text("Total Amount");
+    
+    // line chart title to svg
+	let title = svg.append("g")
+		.attr("class", "title");
+	title.append("text")
+		.attr("x", (width/1.5))
+			.attr("y", -20)
+			.attr("text-anchor", "middle")
+			.style("font", "12px monospace")
+			.text("Total yearly donation by the United States"); 
+});
+
+</script>
+<!-- write up part-->
+<center><h1>Assignment description</h1></center>
+    <h3>URLs of examples that I used in completing the assignment: </h3>
+    <ul>
+        <a href="https://bl.ocks.org/mbostock/3883245"> Mike Bostock's line chart example</a>
+        <li>https://bl.ocks.org/mbostock/3883245</li>
+        <a href="https://bost.ocks.org/mike/bar/"> Mike Bostock's bar chart example</a>
+        <li>https://bost.ocks.org/mike/bar/</li>  
+   </ul>
+    <br />
+   <h3>Getting started with D3: </h3>
+    <ol>
+    <li>To create a line chart in D3 I used the same data file of assignment V3 (as asked for the assignment V4) <i>linechart.csv</i> to plot the data.</li>
+    <li>Now, I take the two seperate SVG id's for both charts in which I defined the width and height.</li>
+    <li>To plot a chart first thing we need to create the X and Y axes. To do so, I declared a domain and range. Where domain refers to the values from minimum to maximum and range refers to the amount that the SVG will cover. I set the range for axes by considering the left and right margin.</li>
+    <li>For the axes X and Y I defined the scale and afterward appended both the axis to the SVG and applied the transform. </li>
+    <li>To apply the range of X and Y to transform them into the plotting space and to draw a line I used the d3.svg.line() to draw the line graph. Including this, I created a line generator function which returns the x and y coordinates from data to plot the line.</li>
+    <li> At the begining of the line chart code, for the line chart design I gave the parameters viz. stroke, stroke-width, fill. Where stroke is used for line color which I chose steel blue. Stroke-width is used todefine the width of line which is 2. For fill I gave the parameter "none" to make it visual on web page.</li>
+    <li>For the bar chart, I used the data <i>barchart.csv</i> similarly as V3 to track the donation amount in year 2010. I plotted the horizontal bar chart since the country list (Y axis) is longer than X axis.</li>
+    <li>I used the X, Y coordinates to set the height and width of the bar. Each bar contains a "g" element which has a rect and a text. I use a data join to create a g element for every data point.</li>
+    <li>In the steps of creating the bar chart, it includes the following steps like line charts, respectively-
+    setting the chart scale, loading the data followed by sorting it, set the domain based on data. Later, appending the X axis to svg
+    and append Y axis to svg followed by apeending rects to svg based on our data. At last, I defined the chart title to svg as "Donation by the United States in year 2010". After that 
+    appending source data to svg.</li>
+    </ol>
+    <br />
+    <h3>Comparative analysis of D3 and Vega-Lite for Bar and Line chart creation:</h3>
+    <p>
+    D3 is useful to visualize data using HTML, SVG, and CSS. On the other hand, Vega-Lite also provides the solutions regarding information visualization. While using both for the assignment V3 and V4 using same data sets. I find D3 better in terms of visualization. Though, cding part in D3 feels tedious than Vega-Lite. D3 has much more options to manipulate data. On the other hand, Vega-Lite is easy to generate charts but for the visualization of complex and multiple data sets, D3 is better than Vega-Lite.
+    </p>
+    <br />
+    <h3>Helpful tutorial links to understand concepts: </h3>
+    <p>
+    These are the folowing links that I used to understand the concept of d3.js's v3 and v4 concepts and differences along with the joins concept to make a bar and line chart.
+    </p>
+    <ul>
+      <a href="http://d3indepth.com/"> D3 in depth</a>
+      <li>http://d3indepth.com/</li>
+      <a href="http://rajapradhan.com/blogs/d3-js-v4-essentials/"> A blog on D3 version-4 essentials</a>
+     <li>http://rajapradhan.com/blogs/d3-js-v4-essentials/</li>
+   </ul>   
+    <p>
+    By considering "joins",we can make our code more declarative. We are able to deal with multiple states without any branching like <i>if</i> or <i>for</i>.
+    </p>
+    <ul> 
+    <a href="https://bost.ocks.org/mike/join/"> Thinking with joins</a>
+    <li>https://bost.ocks.org/mike/join/</li>  
+   </ul> 
+</body>
+</html>
+
